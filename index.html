@@ -398,12 +398,12 @@
   <div class="list" id="taskList"></div>
 
   <script>
-    // Fjern Splash Screen etter kort innlasting
+    // Fjern Splash Screen etter 1200 ms (1,2 sekunder)
     window.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         if (splash) splash.classList.add('hidden');
-      }, 700);
+      }, 1200);
     });
 
     const defaultData = [
