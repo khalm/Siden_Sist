@@ -173,6 +173,55 @@
       letter-spacing: -0.01em;
       color: var(--text-main);
     }
+    .card-tools {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    /* Hengelås-knapp og fargestyring */
+    .btn-lock {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.15s, transform 0.1s;
+    }
+    .btn-lock svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+    /* Åpen lås: Lys grå */
+    .btn-lock.is-unlocked svg {
+      stroke: #94a3b8;
+    }
+    .btn-lock.is-unlocked:hover {
+      background-color: #f1f5f9;
+    }
+    .btn-lock.is-unlocked:hover svg {
+      stroke: #64748b;
+    }
+
+    /* Lukket lås: Gulaktig */
+    .btn-lock.is-locked {
+      background-color: #fef9c3;
+    }
+    .btn-lock.is-locked svg {
+      stroke: #ca8a04;
+    }
+    .btn-lock.is-locked:hover {
+      background-color: #fef08a;
+    }
+
     .delete-card-btn {
       background: transparent;
       border: none;
@@ -354,7 +403,7 @@
       border-radius: 4px;
       transition: background-color 0.15s;
     }
-    .history-note-input:focus {
+    .history-note-input:not([readonly]):focus {
       background: #ffffff;
       box-shadow: 0 0 0 1.5px #cbd5e1;
     }
@@ -386,7 +435,7 @@
 </head>
 <body>
 
-  <!-- Splash Screen -->
+  <!-- Splash Screen (1200 ms) -->
   <div id="splash-screen">
     <div class="splash-logo-box">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -407,7 +456,6 @@
   <div class="list" id="taskList"></div>
 
   <script>
-    // Splash screen varer i 1,2 sekunder (1200 ms)
     window.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         const splash = document.getElementById('splash-screen');
@@ -419,6 +467,7 @@
       {
         id: 1,
         title: 'Klippet plenen',
+        locked: false,
         history: [
           { entryId: 101, date: getPastDateString(8), note: 'Litt fuktig i gresset' },
           { entryId: 102, date: getPastDateString(22), note: 'Første klipp for sesongen' }
@@ -427,6 +476,7 @@
       {
         id: 2,
         title: 'Klippet håret',
+        locked: false,
         history: [
           { entryId: 201, date: getPastDateString(42), note: 'Kort på sidene' }
         ]
@@ -434,6 +484,7 @@
       {
         id: 3,
         title: 'Vasket stekeovn',
+        locked: false,
         history: [
           { entryId: 301, date: getPastDateString(410), note: 'Grundig vask med spray' }
         ]
@@ -498,15 +549,23 @@
       tasks.unshift({
         id: Date.now(),
         title: val,
+        locked: false,
         history: [{ entryId: Date.now() + 1, date: getTodayString(), note: '' }]
       });
       input.value = '';
       saveToStorage();
     }
 
-    function logDate(taskId, chosenDate) {
+    function toggleLock(taskId) {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
+      task.locked = !task.locked;
+      saveToStorage();
+    }
+
+    function logDate(taskId, chosenDate) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task || task.locked) return;
 
       task.history.unshift({
         entryId: Date.now(),
@@ -519,7 +578,7 @@
 
     function updateNote(taskId, entryId, newNote) {
       const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
+      if (!task || task.locked) return;
       const entry = task.history.find(e => e.entryId === entryId);
       if (entry) {
         entry.note = newNote;
@@ -529,12 +588,14 @@
 
     function deleteEntry(taskId, entryId) {
       const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
+      if (!task || task.locked) return;
       task.history = task.history.filter(e => e.entryId !== entryId);
       saveToStorage();
     }
 
     function deleteTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task && task.locked) return;
       if (confirm('Fjerne denne oppgaven og all historikk?')) {
         tasks = tasks.filter(t => t.id !== id);
         saveToStorage();
@@ -546,6 +607,22 @@
       el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
     }
 
+    // SVG for ulåst (åpen lås)
+    const unlockSvg = `
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+      </svg>
+    `;
+
+    // SVG for låst (lukket lås)
+    const lockSvg = `
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    `;
+
     function render() {
       const container = document.getElementById('taskList');
       container.innerHTML = '';
@@ -553,13 +630,19 @@
       tasks.forEach(t => {
         const latestEntry = t.history.length > 0 ? t.history[0] : null;
         const latestDate = latestEntry ? latestEntry.date : null;
+        const isLocked = !!t.locked;
 
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
           <div class="card-header">
             <span class="title">${t.title}</span>
-            <button class="delete-card-btn" onclick="deleteTask(${t.id})" title="Fjern oppgave">✕</button>
+            <div class="card-tools">
+              <button class="btn-lock ${isLocked ? 'is-locked' : 'is-unlocked'}" onclick="toggleLock(${t.id})" title="${isLocked ? 'Lås opp' : 'Lås mot endring'}">
+                ${isLocked ? lockSvg : unlockSvg}
+              </button>
+              ${!isLocked ? `<button class="delete-card-btn" onclick="deleteTask(${t.id})" title="Fjern oppgave">✕</button>` : ''}
+            </div>
           </div>
           
           <div class="time-stat">
@@ -567,18 +650,20 @@
             <span class="exact-date">${formatDisplayDate(latestDate)}</span>
           </div>
 
-          <div class="actions">
-            <button class="action-btn btn-today" onclick="logDate(${t.id}, '${getTodayString()}')">Gjorde det i dag</button>
-            <button class="action-btn btn-secondary" onclick="toggleDatePicker(${t.id})">Annen dato...</button>
-          </div>
+          ${!isLocked ? `
+            <div class="actions">
+              <button class="action-btn btn-today" onclick="logDate(${t.id}, '${getTodayString()}')">Gjorde det i dag</button>
+              <button class="action-btn btn-secondary" onclick="toggleDatePicker(${t.id})">Annen dato...</button>
+            </div>
 
-          <div id="picker-box-${t.id}" class="datepicker-box" style="display: none;">
-            <input type="date" id="date-input-${t.id}" value="${getTodayString()}" max="${getTodayString()}">
-            <button onclick="
-              const val = document.getElementById('date-input-${t.id}').value;
-              if (val) logDate(${t.id}, val);
-            ">Lagre</button>
-          </div>
+            <div id="picker-box-${t.id}" class="datepicker-box" style="display: none;">
+              <input type="date" id="date-input-${t.id}" value="${getTodayString()}" max="${getTodayString()}">
+              <button onclick="
+                const val = document.getElementById('date-input-${t.id}').value;
+                if (val) logDate(${t.id}, val);
+              ">Lagre</button>
+            </div>
+          ` : ''}
 
           <details class="history-details" ${t.history.length === 0 ? 'style=\"display:none;\"' : ''}>
             <summary>
@@ -589,10 +674,12 @@
               ${t.history.map(entry => `
                 <div class="history-item">
                   <span class="history-badge">${formatDisplayDate(entry.date)}</span>
-                  <input type="text" class="history-note-input" placeholder="Skriv notat her..." value="${entry.note || ''}" 
+                  <input type="text" class="history-note-input" placeholder="${isLocked ? 'Ingen notater' : 'Skriv notat her...'}" 
+                    value="${entry.note || ''}" 
+                    ${isLocked ? 'readonly' : ''}
                     onchange="updateNote(${t.id},${entry.entryId}, this.value)"
                     onblur="updateNote(${t.id},${entry.entryId}, this.value)">
-                  <button class="btn-delete-entry" onclick="deleteEntry(${t.id},${entry.entryId})" title="Fjern denne datoen">✕</button>
+                  ${!isLocked ? `<button class="btn-delete-entry" onclick="deleteEntry(${t.id}, ${entry.entryId})" title="Fjern denne datoen">✕</button>` : ''}
                 </div>
               `).join('')}
             </div>
