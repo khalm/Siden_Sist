@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Kobling til manifestet for Android/Chrome -->
+  <title>Siden Sist</title>
+  
+  <!-- Manifest for Android/Chrome og iOS -->
   <link rel="manifest" href="manifest.json">
-
-  <!-- Tilpasning for iPhone/Safari (iOS trenger egne meta-tagger) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Siden Sist">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <title>Siden Sist</title>
+
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #f3f4f6; color: #1f2937; padding: 20px 16px; max-width: 520px; margin: 0 auto; }
+    body { background-color: #f3f4f6; color: #1f2937; padding: 20px 16px 40px; max-width: 540px; margin: 0 auto; }
     header { margin-bottom: 24px; }
     h1 { font-size: 1.6rem; font-weight: 700; color: #111827; }
     p.sub { font-size: 0.9rem; color: #6b7280; margin-top: 4px; }
@@ -24,40 +24,75 @@
     input[type="text"] {
       flex: 1; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 1rem; background: #fff;
     }
-    input[type="text"]:focus { outline: none; border-color: #4b5563; }
+    input[type="text"]:focus { outline: none; border-color: #059669; }
     .btn-add {
       background: #1f2937; color: #fff; border: none; padding: 0 18px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
     }
 
-    /* Liste med oppgaver */
-    .list { display: flex; flex-direction: column; gap: 14px; }
+    /* Oppgavekort */
+    .list { display: flex; flex-direction: column; gap: 16px; }
     .card {
-      background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      background: #ffffff; padding: 16px; border-radius: 14px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     .card-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-    .title { font-size: 1.1rem; font-weight: 600; color: #111827; }
-    .delete-btn { background: none; border: none; color: #9ca3af; font-size: 1.2rem; cursor: pointer; padding: 0 4px; }
-    .delete-btn:hover { color: #ef4444; }
+    .title { font-size: 1.15rem; font-weight: 600; color: #111827; }
+    .delete-card-btn { background: none; border: none; color: #9ca3af; font-size: 1.2rem; cursor: pointer; padding: 0 4px; }
+    .delete-card-btn:hover { color: #ef4444; }
 
     /* Tidsvisning */
-    .time-since { font-size: 1.25rem; font-weight: 700; color: #374151; margin-bottom: 2px; }
-    .exact-date { font-size: 0.8rem; color: #6b7280; margin-bottom: 14px; }
+    .time-since { font-size: 1.35rem; font-weight: 700; color: #111827; margin-bottom: 2px; }
+    .exact-date { font-size: 0.85rem; color: #6b7280; margin-bottom: 14px; }
 
     /* Knapperader */
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
     button.action-btn {
-      background: #f3f4f6; border: 1px solid #e5e7eb; padding: 7px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; color: #374151;
+      border: 1px solid #e5e7eb; padding: 8px 14px; border-radius: 8px; font-size: 0.88rem; font-weight: 500; cursor: pointer; background: #f9fafb; color: #374151;
     }
-    button.action-btn:hover { background: #e5e7eb; }
-    button.primary-btn { background: #e5e7eb; font-weight: 600; }
+    button.action-btn:hover { background: #f3f4f6; }
 
-    /* Datofeltet når man vil velge dato */
+    /* Grønn 'I dag'-knapp */
+    button.btn-today {
+      background: #ecfdf5; border-color: #a7f3d0; color: #065f46; font-weight: 600;
+    }
+    button.btn-today:hover { background: #d1fae5; border-color: #6ee7b7; }
+
+    /* Egen datovelger */
     .datepicker-box {
-      margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e5e7eb; display: flex; gap: 8px; align-items: center;
+      margin-bottom: 12px; padding: 10px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; gap: 8px; align-items: center;
     }
     .datepicker-box input[type="date"] {
       padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem;
     }
+
+    /* Nedtrekkbar historikk */
+    details.history-details {
+      border-top: 1px solid #f3f4f6; padding-top: 10px; margin-top: 4px;
+    }
+    details.history-details summary {
+      font-size: 0.82rem; font-weight: 600; color: #6b7280; cursor: pointer; user-select: none; list-style: none; display: flex; align-items: center; gap: 6px;
+    }
+    details.history-details summary::-webkit-details-marker { display: none; }
+    details.history-details summary::before {
+      content: '▸'; display: inline-block; font-size: 0.75rem; transition: transform 0.15s ease;
+    }
+    details[open] summary::before { transform: rotate(90deg); }
+
+    .history-list {
+      margin-top: 10px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .history-item {
+      display: flex; align-items: center; gap: 8px; background: #f9fafb; padding: 6px 10px; border-radius: 8px; border: 1px solid #f3f4f6; font-size: 0.85rem;
+    }
+    .history-date { font-weight: 600; color: #374151; white-space: nowrap; }
+    .history-note-input {
+      flex: 1; border: 1px solid transparent; background: transparent; padding: 4px 6px; font-size: 0.82rem; color: #4b5563; border-radius: 4px;
+    }
+    .history-note-input:hover { background: #ffffff; border-color: #e5e7eb; }
+    .history-note-input:focus { background: #ffffff; border-color: #059669; outline: none; }
+    .btn-delete-entry {
+      background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer; padding: 0 4px; line-height: 1; font-weight: bold;
+    }
+    .btn-delete-entry:hover { color: #b91c1c; }
   </style>
 </head>
 <body>
@@ -75,27 +110,45 @@
   <div class="list" id="taskList"></div>
 
   <script>
-    // 1. Hent lagrede data fra telefonen/nettleseren (eller start med forslag)
+    // Standard oppgaver hvis lageret er tomt
     const defaultData = [
-      { id: 1, title: 'Klippet plenen', date: getPastDateString(8) },
-      { id: 2, title: 'Klippet håret', date: getPastDateString(42) },
-      { id: 3, title: 'Vasket stekeovn', date: getPastDateString(410) } // Over et år siden
+      {
+        id: 1,
+        title: 'Klippet plenen',
+        history: [
+          { entryId: 101, date: getPastDateString(8), note: 'Litt fuktig i gresset' },
+          { entryId: 102, date: getPastDateString(22), note: 'Første klipp for sesongen' }
+        ]
+      },
+      {
+        id: 2,
+        title: 'Klippet håret',
+        history: [
+          { entryId: 201, date: getPastDateString(42), note: 'Kort på sidene' }
+        ]
+      },
+      {
+        id: 3,
+        title: 'Vasket stekeovn',
+        history: [
+          { entryId: 301, date: getPastDateString(410), note: 'Grundig vask med ovnsspray' }
+        ]
+      }
     ];
 
-    let tasks = JSON.parse(localStorage.getItem('siden_sist_oppgaver')) || defaultData;
+    let tasks = JSON.parse(localStorage.getItem('siden_sist_oppgaver_v2')) || defaultData;
 
     function saveToStorage() {
-      localStorage.setItem('siden_sist_oppgaver', JSON.stringify(tasks));
+      localStorage.setItem('siden_sist_oppgaver_v2', JSON.stringify(tasks));
       render();
     }
 
-    // Regner ut "X dager" eller "X år og Y dager"
+    // Regner ut tidsdifferanse
     function formatTimeSince(dateStr) {
+      if (!dateStr) return 'Ingen dato registrert';
       const parts = dateStr.split('-');
       const past = new Date(parts[0], parts[1] - 1, parts[2]);
       const now = new Date();
-      
-      // Nullstill klokkeslett for nøyaktig dagsdifferanse
       past.setHours(0,0,0,0);
       now.setHours(0,0,0,0);
 
@@ -105,51 +158,33 @@
       if (totalDays === 0) return 'I dag';
       if (totalDays === 1) return 'I går (1 dag siden)';
       if (totalDays < 0) return 'Frem i tid';
+      if (totalDays < 365) return `${totalDays} dager siden`;
 
-      if (totalDays < 365) {
-        return `${totalDays} dager siden`;
-      }
-
-      // Regn om til år og dager
       const years = Math.floor(totalDays / 365);
       const remainingDays = totalDays % 365;
-
       const yearWord = years === 1 ? '1 år' : `${years} år`;
-      if (remainingDays === 0) {
-        return `${yearWord} siden`;
-      } else if (remainingDays === 1) {
-        return `${yearWord} og 1 dag siden`;
-      } else {
-        return `${yearWord} og ${remainingDays} dager siden`;
-      }
+
+      if (remainingDays === 0) return `${yearWord} siden`;
+      if (remainingDays === 1) return `${yearWord} og 1 dag siden`;
+      return `${yearWord} og ${remainingDays} dager siden`;
     }
 
     function formatDisplayDate(dateStr) {
-      if (!dateStr) return '';
+      if (!dateStr) return 'Aldri';
       const [y, m, d] = dateStr.split('-');
-      return `${parseInt(d)}. ${getMonthName(parseInt(m))} ${y}`;
-    }
-
-    function getMonthName(m) {
       const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
-      return months[m - 1] || '';
+      return `${parseInt(d)}. ${months[parseInt(m) - 1]} ${y}`;
     }
 
     function getTodayString() {
       const d = new Date();
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     function getPastDateString(daysAgo) {
       const d = new Date();
       d.setDate(d.getDate() - daysAgo);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     function addTask() {
@@ -160,28 +195,47 @@
       tasks.unshift({
         id: Date.now(),
         title: val,
-        date: getTodayString()
+        history: [{ entryId: Date.now() + 1, date: getTodayString(), note: '' }]
       });
       input.value = '';
       saveToStorage();
     }
 
-    function markToday(id) {
-      const item = tasks.find(t => t.id === id);
-      if (item) {
-        item.date = getTodayString();
-        saveToStorage();
+    function logDate(taskId, chosenDate) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      task.history.unshift({
+        entryId: Date.now(),
+        date: chosenDate,
+        note: ''
+      });
+      // Sorter historikken så nyeste dato alltid ligger øverst
+      task.history.sort((a, b) => new Date(b.date) - new Date(a.date));
+      saveToStorage();
+    }
+
+    function updateNote(taskId, entryId, newNote) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const entry = task.history.find(e => e.entryId === entryId);
+      if (entry) {
+        entry.note = newNote;
+        localStorage.setItem('siden_sist_oppgaver_v2', JSON.stringify(tasks));
       }
     }
 
-    function setCustomDate(id) {
-      const dateInput = document.getElementById(`date-input-${id}`);
-      if (dateInput && dateInput.value) {
-        const item = tasks.find(t => t.id === id);
-        if (item) {
-          item.date = dateInput.value;
-          saveToStorage();
-        }
+    function deleteEntry(taskId, entryId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      task.history = task.history.filter(e => e.entryId !== entryId);
+      saveToStorage();
+    }
+
+    function deleteTask(id) {
+      if (confirm('Fjerne hele oppgaven og all historikk?')) {
+        tasks = tasks.filter(t => t.id !== id);
+        saveToStorage();
       }
     }
 
@@ -190,41 +244,57 @@
       el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
     }
 
-    function deleteTask(id) {
-      if (confirm('Fjerne denne oppgaven?')) {
-        tasks = tasks.filter(t => t.id !== id);
-        saveToStorage();
-      }
-    }
-
     function render() {
       const container = document.getElementById('taskList');
       container.innerHTML = '';
 
       tasks.forEach(t => {
+        // Hent nyeste entry
+        const latestEntry = t.history.length > 0 ? t.history[0] : null;
+        const latestDate = latestEntry ? latestEntry.date : null;
+
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
           <div class="card-top">
             <span class="title">${t.title}</span>
-            <button class="delete-btn" onclick="deleteTask(${t.id})" title="Slett">✕</button>
+            <button class="delete-card-btn" onclick="deleteTask(${t.id})" title="Slett hele oppgaven">✕</button>
           </div>
-          <div class="time-since">${formatTimeSince(t.date)}</div>
-          <div class="exact-date">Sist: ${formatDisplayDate(t.date)}</div>
+          <div class="time-since">${formatTimeSince(latestDate)}</div>
+          <div class="exact-date">Sist: ${formatDisplayDate(latestDate)}</div>
+
           <div class="actions">
-            <button class="action-btn primary-btn" onclick="markToday(${t.id})">Gjorde det i dag</button>
+            <button class="action-btn btn-today" onclick="logDate(${t.id}, '${getTodayString()}')">✓ Gjorde det i dag</button>
             <button class="action-btn" onclick="toggleDatePicker(${t.id})">Velg annen dato...</button>
           </div>
+
           <div id="picker-box-${t.id}" class="datepicker-box" style="display: none;">
-            <input type="date" id="date-input-${t.id}" value="${t.date}" max="${getTodayString()}">
-            <button class="action-btn primary-btn" onclick="setCustomDate(${t.id})">Lagre dato</button>
+            <input type="date" id="date-input-${t.id}" value="${getTodayString()}" max="${getTodayString()}">
+            <button class="action-btn" onclick="
+              const val = document.getElementById('date-input-${t.id}').value;
+              if (val) logDate(${t.id}, val);
+            ">Lagre</button>
           </div>
+
+          <details class="history-details" ${t.history.length === 0 ? 'style=\"display:none;\"' : ''}>
+            <summary>Tidligere hendelser (${t.history.length})</summary>
+            <div class="history-list">
+              ${t.history.map(entry => `
+                <div class="history-item">
+                  <span class="history-date">${formatDisplayDate(entry.date)}</span>
+                  <input type="text" class="history-note-input" placeholder="Legg til notat..." value="${entry.note || ''}" 
+                    onchange="updateNote(${t.id},${entry.entryId}, this.value)"
+                    onblur="updateNote(${t.id},${entry.entryId}, this.value)">
+                  <button class="btn-delete-entry" onclick="deleteEntry(${t.id},${entry.entryId})" title="Fjern denne innføringen">✕</button>
+                </div>
+              `).join('')}
+            </div>
+          </details>
         `;
         container.appendChild(card);
       });
     }
 
-    // Start visningen ved innlasting
     render();
   </script>
 </body>
