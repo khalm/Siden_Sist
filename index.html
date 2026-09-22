@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siden Sist</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f3f4f6; color: #1f2937; padding: 20px 16px; max-width: 520px; margin: 0 auto; }
+    header { margin-bottom: 24px; }
+    h1 { font-size: 1.6rem; font-weight: 700; color: #111827; }
+    p.sub { font-size: 0.9rem; color: #6b7280; margin-top: 4px; }
+
+    /* Legg til oppgave */
+    .add-box { display: flex; gap: 8px; margin-bottom: 24px; }
+    input[type="text"] {
+      flex: 1; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 1rem; background: #fff;
+    }
+    input[type="text"]:focus { outline: none; border-color: #4b5563; }
+    .btn-add {
+      background: #1f2937; color: #fff; border: none; padding: 0 18px; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    }
+
+    /* Liste med oppgaver */
+    .list { display: flex; flex-direction: column; gap: 14px; }
+    .card {
+      background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+    .title { font-size: 1.1rem; font-weight: 600; color: #111827; }
+    .delete-btn { background: none; border: none; color: #9ca3af; font-size: 1.2rem; cursor: pointer; padding: 0 4px; }
+    .delete-btn:hover { color: #ef4444; }
+
+    /* Tidsvisning */
+    .time-since { font-size: 1.25rem; font-weight: 700; color: #374151; margin-bottom: 2px; }
+    .exact-date { font-size: 0.8rem; color: #6b7280; margin-bottom: 14px; }
+
+    /* Knapperader */
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    button.action-btn {
+      background: #f3f4f6; border: 1px solid #e5e7eb; padding: 7px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; color: #374151;
+    }
+    button.action-btn:hover { background: #e5e7eb; }
+    button.primary-btn { background: #e5e7eb; font-weight: 600; }
+
+    /* Datofeltet når man vil velge dato */
+    .datepicker-box {
+      margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e5e7eb; display: flex; gap: 8px; align-items: center;
+    }
+    .datepicker-box input[type="date"] {
+      padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Siden Sist</h1>
+    <p class="sub">Enkel loggbok – ingen frister, null stress.</p>
+  </header>
+
+  <div class="add-box">
+    <input type="text" id="taskInput" placeholder="F.eks. Klippet gress, vasket ovn..." onkeydown="if(event.key==='Enter') addTask()">
+    <button class="btn-add" onclick="addTask()">Legg til</button>
+  </div>
+
+  <div class="list" id="taskList"></div>
+
+  <script>
+    // 1. Hent lagrede data fra telefonen/nettleseren (eller start med forslag)
+    const defaultData = [
+      { id: 1, title: 'Klippet plenen', date: getPastDateString(8) },
+      { id: 2, title: 'Klippet håret', date: getPastDateString(42) },
+      { id: 3, title: 'Vasket stekeovn', date: getPastDateString(410) } // Over et år siden
+    ];
+
+    let tasks = JSON.parse(localStorage.getItem('siden_sist_oppgaver')) || defaultData;
+
+    function saveToStorage() {
+      localStorage.setItem('siden_sist_oppgaver', JSON.stringify(tasks));
+      render();
+    }
+
+    // Regner ut "X dager" eller "X år og Y dager"
+    function formatTimeSince(dateStr) {
+      const parts = dateStr.split('-');
+      const past = new Date(parts[0], parts[1] - 1, parts[2]);
+      const now = new Date();
+      
+      // Nullstill klokkeslett for nøyaktig dagsdifferanse
+      past.setHours(0,0,0,0);
+      now.setHours(0,0,0,0);
+
+      const diffMs = now - past;
+      const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (totalDays === 0) return 'I dag';
+      if (totalDays === 1) return 'I går (1 dag siden)';
+      if (totalDays < 0) return 'Frem i tid';
+
+      if (totalDays < 365) {
+        return `${totalDays} dager siden`;
+      }
+
+      // Regn om til år og dager
+      const years = Math.floor(totalDays / 365);
+      const remainingDays = totalDays % 365;
+
+      const yearWord = years === 1 ? '1 år' : `${years} år`;
+      if (remainingDays === 0) {
+        return `${yearWord} siden`;
+      } else if (remainingDays === 1) {
+        return `${yearWord} og 1 dag siden`;
+      } else {
+        return `${yearWord} og ${remainingDays} dager siden`;
+      }
+    }
+
+    function formatDisplayDate(dateStr) {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-');
+      return `${parseInt(d)}. ${getMonthName(parseInt(m))} ${y}`;
+    }
+
+    function getMonthName(m) {
+      const months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
+      return months[m - 1] || '';
+    }
+
+    function getTodayString() {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getPastDateString(daysAgo) {
+      const d = new Date();
+      d.setDate(d.getDate() - daysAgo);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function addTask() {
+      const input = document.getElementById('taskInput');
+      const val = input.value.trim();
+      if (!val) return;
+
+      tasks.unshift({
+        id: Date.now(),
+        title: val,
+        date: getTodayString()
+      });
+      input.value = '';
+      saveToStorage();
+    }
+
+    function markToday(id) {
+      const item = tasks.find(t => t.id === id);
+      if (item) {
+        item.date = getTodayString();
+        saveToStorage();
+      }
+    }
+
+    function setCustomDate(id) {
+      const dateInput = document.getElementById(`date-input-${id}`);
+      if (dateInput && dateInput.value) {
+        const item = tasks.find(t => t.id === id);
+        if (item) {
+          item.date = dateInput.value;
+          saveToStorage();
+        }
+      }
+    }
+
+    function toggleDatePicker(id) {
+      const el = document.getElementById(`picker-box-${id}`);
+      el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+    }
+
+    function deleteTask(id) {
+      if (confirm('Fjerne denne oppgaven?')) {
+        tasks = tasks.filter(t => t.id !== id);
+        saveToStorage();
+      }
+    }
+
+    function render() {
+      const container = document.getElementById('taskList');
+      container.innerHTML = '';
+
+      tasks.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="title">${t.title}</span>
+            <button class="delete-btn" onclick="deleteTask(${t.id})" title="Slett">✕</button>
+          </div>
+          <div class="time-since">${formatTimeSince(t.date)}</div>
+          <div class="exact-date">Sist: ${formatDisplayDate(t.date)}</div>
+          <div class="actions">
+            <button class="action-btn primary-btn" onclick="markToday(${t.id})">Gjorde det i dag</button>
+            <button class="action-btn" onclick="toggleDatePicker(${t.id})">Velg annen dato...</button>
+          </div>
+          <div id="picker-box-${t.id}" class="datepicker-box" style="display: none;">
+            <input type="date" id="date-input-${t.id}" value="${t.date}" max="${getTodayString()}">
+            <button class="action-btn primary-btn" onclick="setCustomDate(${t.id})">Lagre dato</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Start visningen ved innlasting
+    render();
+  </script>
+</body>
+</html>
