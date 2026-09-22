@@ -1,6 +1,6 @@
 {
   "name": "Siden Sist",
-  "short_name": "SidenSist",
+  "short_name": "Siden Sist",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
