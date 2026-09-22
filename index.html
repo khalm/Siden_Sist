@@ -24,6 +24,9 @@
       --emerald-text: #065f46;
       --emerald-border: #a7f3d0;
       --emerald-hover: #d1fae5;
+      --danger-muted: #e11d48;
+      --danger-soft-bg: #fff1f2;
+      --danger-hover: #be123c;
       --radius-lg: 20px;
       --radius-md: 12px;
       --radius-sm: 8px;
@@ -173,7 +176,7 @@
     .delete-card-btn {
       background: transparent;
       border: none;
-      color: #cbd5e1;
+      color: var(--danger-muted);
       width: 28px;
       height: 28px;
       border-radius: 50%;
@@ -182,11 +185,14 @@
       align-items: center;
       justify-content: center;
       font-size: 0.95rem;
-      transition: color 0.15s, background-color 0.15s;
+      transition: color 0.15s, background-color 0.15s, transform 0.1s;
     }
     .delete-card-btn:hover {
-      color: #ef4444;
-      background-color: #fef2f2;
+      color: var(--danger-hover);
+      background-color: var(--danger-soft-bg);
+    }
+    .delete-card-btn:active {
+      transform: scale(0.92);
     }
 
     /* Hovedvisning av tid */
@@ -358,7 +364,7 @@
     .btn-delete-entry {
       background: none;
       border: none;
-      color: #cbd5e1;
+      color: var(--danger-muted);
       width: 22px;
       height: 22px;
       border-radius: 50%;
@@ -367,11 +373,14 @@
       align-items: center;
       justify-content: center;
       font-size: 0.85rem;
-      transition: color 0.15s, background-color 0.15s;
+      transition: color 0.15s, background-color 0.15s, transform 0.1s;
     }
     .btn-delete-entry:hover {
-      color: #ef4444;
-      background-color: #fee2e2;
+      color: var(--danger-hover);
+      background-color: var(--danger-soft-bg);
+    }
+    .btn-delete-entry:active {
+      transform: scale(0.92);
     }
   </style>
 </head>
@@ -398,7 +407,7 @@
   <div class="list" id="taskList"></div>
 
   <script>
-    // Fjern Splash Screen etter 1200 ms (1,2 sekunder)
+    // Splash screen varer i 1,2 sekunder (1200 ms)
     window.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         const splash = document.getElementById('splash-screen');
