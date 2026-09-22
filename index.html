@@ -179,7 +179,7 @@
       gap: 6px;
     }
     
-    /* Hengelås-knapp og fargestyring */
+    /* Hengelås */
     .btn-lock {
       background: transparent;
       border: none;
@@ -200,7 +200,6 @@
       stroke-linejoin: round;
       fill: none;
     }
-    /* Åpen lås: Lys grå */
     .btn-lock.is-unlocked svg {
       stroke: #94a3b8;
     }
@@ -211,7 +210,6 @@
       stroke: #64748b;
     }
 
-    /* Lukket lås: Gulaktig */
     .btn-lock.is-locked {
       background-color: #fef9c3;
     }
@@ -431,11 +429,87 @@
     .btn-delete-entry:active {
       transform: scale(0.92);
     }
+
+    /* Skreddersydd Bekreftelsesdialog (Modal) */
+    .custom-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+    .custom-modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .custom-modal {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 22px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+      transform: scale(0.95);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .custom-modal-overlay.active .custom-modal {
+      transform: scale(1);
+    }
+    .modal-app-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .modal-message {
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .modal-btn {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.15s, transform 0.1s;
+    }
+    .modal-btn:active {
+      transform: scale(0.97);
+    }
+    .modal-btn-cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .modal-btn-confirm {
+      background: var(--danger-muted);
+      color: #ffffff;
+    }
+    .modal-btn-confirm:hover {
+      background: var(--danger-hover);
+    }
   </style>
 </head>
 <body>
 
-  <!-- Splash Screen (1200 ms) -->
+  <!-- Splash Screen -->
   <div id="splash-screen">
     <div class="splash-logo-box">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -445,6 +519,18 @@
     </div>
     <div class="splash-title">Siden Sist</div>
     <div class="splash-sub">Oversikt i eget tempo</div>
+  </div>
+
+  <!-- Egen Bekreftelsesdialog -->
+  <div id="customConfirmModal" class="custom-modal-overlay">
+    <div class="custom-modal">
+      <div class="modal-app-name">Siden Sist</div>
+      <div class="modal-message" id="confirmModalText">Fjerne denne oppgaven og all historikk?</div>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal(false)">Avbryt</button>
+        <button class="modal-btn modal-btn-confirm" onclick="closeConfirmModal(true)">Fjern</button>
+      </div>
+    </div>
   </div>
 
   <!-- Hovedinnhold -->
@@ -593,13 +679,31 @@
       saveToStorage();
     }
 
+    /* Egen modal-håndtering for sletting */
+    let pendingDeleteAction = null;
+
+    function openConfirmModal(message, action) {
+      document.getElementById('confirmModalText').textContent = message;
+      pendingDeleteAction = action;
+      document.getElementById('customConfirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal(confirmed) {
+      document.getElementById('customConfirmModal').classList.remove('active');
+      if (confirmed && typeof pendingDeleteAction === 'function') {
+        pendingDeleteAction();
+      }
+      pendingDeleteAction = null;
+    }
+
     function deleteTask(id) {
       const task = tasks.find(t => t.id === id);
       if (task && task.locked) return;
-      if (confirm('Fjerne denne oppgaven og all historikk?')) {
+
+      openConfirmModal(`Fjerne «${task.title}» og all historikk?`, () => {
         tasks = tasks.filter(t => t.id !== id);
         saveToStorage();
-      }
+      });
     }
 
     function toggleDatePicker(id) {
@@ -607,7 +711,6 @@
       el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
     }
 
-    // SVG for ulåst (åpen lås)
     const unlockSvg = `
       <svg viewBox="0 0 24 24">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -615,7 +718,6 @@
       </svg>
     `;
 
-    // SVG for låst (lukket lås)
     const lockSvg = `
       <svg viewBox="0 0 24 24">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
